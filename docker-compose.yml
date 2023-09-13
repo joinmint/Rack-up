@@ -1,0 +1,80 @@
+version: "3.7"
+
+services:
+  db:
+    container_name: db
+    image: postgres:15
+    user: ${POSTGRES_USER}
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - db:/var/lib/postgresql/data
+  api:
+    container_name: api
+    image: "node:18"
+    user: "node"
+    working_dir: /backend
+    environment:
+      DYNAMO_DB_ENDPOINT: ${DYNAMO_DB_ENDPOINT}
+      DYNAMO_DB_REGION: ${DYNAMO_DB_REGION}
+      DYNAMO_DB_ACCESS_KEY: ${DYNAMO_DB_ACCESS_KEY}
+      DYNAMO_DB_SECRET_ACCESS_KEY: ${DYNAMO_DB_SECRET_ACCESS_KEY}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY}
+      S3_BUCKET: ${S3_BUCKET}
+      MAPPER_LAMBDA_URL: ${MAPPER_LAMBDA_URL}
+      REACT_APP_PUBLIC_URL: ${REACT_APP_PUBLIC_URL}
+      DATABASE_URL: ${DATABASE_URL}
+      SERVER_ENVIRONMENT: ${SERVER_ENVIRONMENT}
+    volumes:
+      - ./backend:/backend
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    command: bash -c "npm start"
+  app:
+    container_name: app
+    image: "node:18"
+    user: "node"
+    environment:
+      REACT_APP_API_URL: ${REACT_APP_API_URL}
+      REACT_APP_PUBLIC_URL: ${REACT_APP_PUBLIC_URL}
+      REACT_APP_AUTH0_DOMAIN: ${REACT_APP_AUTH0_DOMAIN}
+      REACT_APP_AUTH0_CLIENTID: ${REACT_APP_AUTH0_CLIENTID}
+      REACT_APP_AUTH0_CALLBACK_URL: ${REACT_APP_AUTH0_CALLBACK_URL}
+      REACT_APP_AUTH0_AUDIENCE: ${REACT_APP_AUTH0_AUDIENCE}
+    working_dir: /frontend
+    volumes:
+      - ./frontend:/frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+    command: "npm start"
+  public-app:
+    container_name: public-app
+    image: "node:18"
+    user: "node"
+    environment:
+      REACT_APP_PUBLIC_URL: ${REACT_APP_PUBLIC_URL}
+      REACT_APP_API_URL: ${REACT_APP_API_URL}
+    working_dir: /frontend-public
+    volumes:
+      - ./frontend-public:/frontend-public
+    ports:
+      - "4000:4000"
+    depends_on:
+      - api
+    command: "npm start"
+volumes:
+  db:
+    driver: local

@@ -1,0 +1,146 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-1.1.x", "linux-musl"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Orginization {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  name         String  @db.VarChar(255)
+  templateName String? @db.VarChar(255)
+
+  users      User[]
+  members    Member[]
+  generators Generator[]
+  redeemers  Redeemer[]
+  partners   Partner[]
+
+  @@map(name: "orginizations")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  authId    String  @unique @db.VarChar(255)
+  email     String  @db.VarChar(255)
+  firstName String? @db.VarChar(255)
+  lastName  String? @db.VarChar(255)
+
+  orginizationObject Orginization? @relation(fields: [orginizationId], references: [id])
+  orginizationId     String?
+
+  @@map(name: "users")
+}
+
+model Member {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  firstName String   @db.VarChar(255)
+  lastName  String   @db.VarChar(255)
+  address   String?  @db.VarChar(255)
+  email     String   @db.VarChar(255)
+  dob       String   @db.VarChar(255)
+
+  accountBalance Int
+
+  orginizationObject Orginization? @relation(fields: [orginizationId], references: [id])
+  orginizationId     String?
+  transactions       Transaction[]
+
+  @@map(name: "members")
+}
+
+model Generator {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  name       String @db.VarChar(255)
+  pointValue Int
+
+  orginizationObject Orginization? @relation(fields: [orginizationId], references: [id])
+  orginizationId     String?
+  transactions       Transaction[]
+
+  @@map(name: "generators")
+}
+
+model Redeemer {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  name       String @db.VarChar(255)
+  pointValue Int
+
+  orginizationObject Orginization? @relation(fields: [orginizationId], references: [id])
+  orginizationId     String?
+  transactions       Transaction[]
+
+  @@map(name: "redeemers")
+}
+
+model Partner {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  name  String @db.VarChar(255)
+  code  String @unique @db.VarChar(255)
+  email String @unique @db.VarChar(255)
+
+  orginizationObject Orginization? @relation(fields: [orginizationId], references: [id])
+  orginizationId     String?
+  transactions       Transaction[]
+
+  @@map(name: "partners")
+}
+
+model Transaction {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  pointValue Int
+
+  generatorObject Generator? @relation(fields: [generatorId], references: [id])
+  generatorId     String?
+
+  memberObject Member? @relation(fields: [memberId], references: [id])
+  memberId     String?
+
+  redeemerObject Redeemer? @relation(fields: [redeemerId], references: [id])
+  redeemerId     String?
+
+  partnerObject Partner? @relation(fields: [partnerId], references: [id])
+  partnerId     String?
+
+  transactionTypeObject TransactionType @relation(fields: [transactionTypeId], references: [id])
+  transactionTypeId     String
+
+  @@map(name: "transactions")
+}
+
+model TransactionType {
+  id        String   @id @default(uuid())
+  name      String   @db.VarChar(255)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  transactions Transaction[]
+
+  @@map(name: "transactionTypes")
+}
